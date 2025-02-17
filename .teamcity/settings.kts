@@ -1,54 +1,26 @@
-version = "2023.05"
+import jetbrains.buildServer.configs.kotlin.v2019_2.*
+
+version = "2022.04"
 
 project {
-    // Project ID and name
-    id("HelloWorld_K8s")
-    name = "HelloWorld Kubernetes Project"
+    buildType(BuildDockerImage)
+    buildType(DeployK8s)
+}
 
-    // Build configuration
-    buildType {
-        id("BuildAndDeploy")
-        name = "Build Docker Image and Deploy to Kubernetes"
+object BuildDockerImage : BuildType({
+    name = "Build Docker Image"
 
-        // VCS root
-        vcs {
-            root(TeamCityVcsRoot) // Replace with your VCS root ID
-        }
+    vcs {
+        root(DslContext.settingsRoot)
+    }
 
-        // Build steps
-        steps {
-            // Step 1: Build Docker image
-            script {
-                name = "Build Docker Image"
-                scriptContent = """
-                    docker build -t your-dockerhub-username/hello-world:latest .
-                    docker push your-dockerhub-username/hello-world:latest
-                """.trimIndent()
-            }
-
-            // Step 2: Deploy Helm chart
-            script {
-                name = "Deploy Helm Chart"
-                scriptContent = """
-                    helm upgrade --install hello-world ./hello-world --namespace default
-                """.trimIndent()
-            }
-
-            // Step 3: Verify deployment
-            script {
-                name = "Verify Deployment"
-                scriptContent = """
-                    kubectl get pods -n default
-                    kubectl get svc -n default
-                """.trimIndent()
-            }
-        }
-
-        // Triggers
-        triggers {
-            vcs {
-                branchFilter = "+:refs/heads/main" // Trigger on changes to the main branch
-            }
+    steps {
+        script {
+            name = "Build & Push Docker Image"
+            scriptContent = """
+                docker build -t my-docker-registry/hello-world:latest .
+                docker push my-docker-registry/hello-world:latest
+            """
         }
     }
-}
+})
